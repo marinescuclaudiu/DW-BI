@@ -251,8 +251,6 @@ export const deleteProduct = async (req: Request, res: Response): Promise<any> =
 }
 
 export const getProductsOnDiscount = async (req: Request, res: Response): Promise<any> => {
-    const { id_oferta } = req.params;
-
     console.log('ProductController - Fetching products by discount');  
 
     // Initialize the connection
@@ -268,21 +266,24 @@ export const getProductsOnDiscount = async (req: Request, res: Response): Promis
         // Prepare the SQL statement
         const sql = `SELECT * FROM PRODUS
                     JOIN OFERTA_PRODUS USING (ID_PRODUS)
-                    WHERE ID_OFERTA = :id_oferta`;
+                    JOIN OFERTA USING (ID_OFERTA)
+                    WHERE DATA_FINALIZARE > SYSDATE`;
     
         // Execute the query
-        const result = await connection.execute(sql, [id_oferta], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
 
         // Map the result rows to the desired format
         if (result.rows && result.rows.length > 0){
             const products = result.rows.map((row: any) => ({
-                id: row.ID_PRODUS,
+                id_produs: row.ID_PRODUS,
+                id_oferta: row.ID_OFERTA,
                 id_subcategorie: row.ID_SUBCATEGORIE,       
                 denumire: row.DENUMIRE,
                 dimensiune: row.DIMENSIUNE,
                 unitate_masura: row.UNITATE_MASURA,
                 pret: row.PRET,
-                activ: row.ACTIV
+                activ: row.ACTIV,
+                procent_reducere: row.PROCENT_REDUCERE
             }));
 
             return res.status(200).json(products);

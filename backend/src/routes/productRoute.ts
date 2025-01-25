@@ -4,8 +4,8 @@ import { getProduct, getProducts, updateProduct, deleteProduct, getProductsOnDis
 export const productRouter = Router();
 
 productRouter.post('/products/add', addProduct);
+productRouter.get('/products/activeDiscount', getProductsOnDiscount);
 productRouter.get('/products/:id', getProduct);
 productRouter.get('/products', getProducts);
 productRouter.put('/products/:id', updateProduct);
 productRouter.delete('/products/:id', deleteProduct);
-productRouter.get('/products/discount/:id_oferta', getProductsOnDiscount);
