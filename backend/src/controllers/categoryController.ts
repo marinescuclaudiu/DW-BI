@@ -2,6 +2,60 @@ import { Request, Response } from "express";
 import { pool } from "../config/dbPool";
 import oracledb from 'oracledb';
 
+export const addCategory = async (req: Request, res: Response): Promise<any> => {
+    const { denumire } = req.body;
+
+    console.log('CategoryController - Adding category with name:', denumire);
+
+    // Initialize the connection
+    let connection: oracledb.Connection | null = null;
+    
+    try {
+        // Wait for the pool to resolve
+        const resolvedPool = await pool;
+
+        // Get a connection from the pool
+        connection = await resolvedPool.getConnection();
+
+        // Prepare the SQL statement
+        const sqlFindId = `SELECT MAX(ID_CATEGORIE) AS MAX_ID FROM CATEGORIE`;
+
+        // Execute the query
+        const resultFindId = await connection.execute(sqlFindId, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+
+        if (resultFindId.rows && resultFindId.rows.length > 0) {
+            const nextId = (resultFindId.rows[0] as any).MAX_ID + 1;
+
+            // Prepare the SQL statement
+            const sql = `INSERT INTO CATEGORIE (ID_CATEGORIE, DENUMIRE_CATEGORIE) VALUES (:nextId, :denumire)`;
+            
+            // Execute the query
+            const result = await connection.execute(sql, [nextId, denumire], { autoCommit: true });
+
+            if (result.rowsAffected === 0) {
+                return res.status(404).json({ message: 'Something went wrong' });
+            }
+
+            return res.status(200).json({ message: 'Category added successfully' });
+        }
+    }   
+    catch (err) {
+        // Handle any errors that occur
+        console.error('Error adding category:', err);
+        return res.status(500).json({ error: 'Failed to add category' });
+    } finally {
+        // Release the connection back to the pool
+        if (connection) {
+            try {
+            await connection.close();
+            } catch (closeError) {
+            console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+}
+
+
 export const getCategory = async (req: Request, res: Response): Promise<any> => {
     const { id } = req.params;
 

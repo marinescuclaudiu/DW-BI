@@ -3,6 +3,57 @@ import { pool } from "../config/dbPool";
 import oracledb from 'oracledb';
 import { formatDateToCustom } from "../helpers/formatDate";
 
+export const addDiscount = async (req: Request, res: Response): Promise<any> => {
+     const { procent_reducere, data_inceput, data_finalizare } = req.body;
+    
+        console.log('DiscountController - Adding discount');
+    
+        // Initialize the connection
+        let connection: oracledb.Connection | null = null;
+        
+        try {
+            // Wait for the pool to resolve
+            const resolvedPool = await pool;
+    
+            // Get a connection from the pool
+            connection = await resolvedPool.getConnection();
+    
+            // Prepare the SQL statement
+            const sqlFindId = `SELECT MAX(ID_OFERTA) AS MAX_ID FROM OFERTA`;
+    
+            // Execute the query
+            const resultFindId = await connection.execute(sqlFindId, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+         
+            if (resultFindId.rows && resultFindId.rows.length > 0) {
+                const nextId = (resultFindId.rows[0] as any).MAX_ID + 1;
+    
+                // Prepare the SQL statement
+                const sql = `INSERT INTO OFERTA (ID_OFERTA, PROCENT_REDUCERE, DATA_INCEPUT, DATA_FINALIZARE) VALUES (:nextId, :procent_reducere, :data_inceput, :data_finalizare)`;
+                
+                // Execute the query
+                const result = await connection.execute(sql, [nextId, procent_reducere, data_inceput, data_finalizare], { autoCommit: true });
+    
+                if (result.rowsAffected === 0) {
+                    return res.status(404).json({ message: 'Something went wrong' });
+                }
+    
+                return res.status(200).json({ message: 'Discount added successfully' });
+            }
+        }
+        catch (err) {
+            console.error(err);
+            return res.status(500).json({ message: 'Internal server error' });
+        } finally {
+            if (connection) {
+                try {
+                await connection.close();
+                } catch (err) {
+                console.error('Error closing connection:', err);
+                }
+            }
+        }
+}
+
 export const getDiscount = async (req: Request, res: Response): Promise<any> => {
     const { id } = req.params;
 
