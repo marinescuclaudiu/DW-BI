@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
-import { poolDW, poolOLTP } from "../config/dbPool"; 
-import oracledb from 'oracledb';
+import { poolDW, poolOLTP } from "../config/dbPool";
+import oracledb from "oracledb";
 
 const dbUserOLTP = process.env.DB_USER_OLTP;
-const dbUserPrefix = dbUserOLTP ? `${dbUserOLTP}.` : '';
+const dbUserPrefix = dbUserOLTP ? `${dbUserOLTP}.` : "";
 
 // Split the query into individual statements
 const queries = [
-    // Insert into CAFENELE
-    `INSERT INTO CAFENELE (id_cafenea, nume_cafenea, nume_oras)
+  // Insert into CAFENELE
+  `INSERT INTO CAFENELE (id_cafenea, nume_cafenea, nume_oras)
      SELECT 
        c.id_cafenea, 
        c.nume_cafenea, 
@@ -22,8 +22,8 @@ const queries = [
        WHERE dw.id_cafenea = c.id_cafenea
      )`,
 
-    // Insert into ORASE
-    `INSERT INTO ORASE (id_oras, nume_oras, nume_judet, nume_regiune)
+  // Insert into ORASE
+  `INSERT INTO ORASE (id_oras, nume_oras, nume_judet, nume_regiune)
      SELECT 
        o.id_oras, 
        o.nume, 
@@ -38,8 +38,8 @@ const queries = [
        WHERE dw.id_oras = o.id_oras
      )`,
 
-    // Insert into OFERTE
-    `INSERT INTO OFERTE (id_oferta, procent_reducere, data_inceput, data_finalizare)
+  // Insert into OFERTE
+  `INSERT INTO OFERTE (id_oferta, procent_reducere, data_inceput, data_finalizare)
      SELECT 
        id_oferta, 
        procent_reducere, 
@@ -52,8 +52,8 @@ const queries = [
        WHERE dw.id_oferta = ${dbUserPrefix}oferta.id_oferta
      )`,
 
-    // Insert into PRODUSE
-    `INSERT INTO PRODUSE (id_produs, denumire, dimensiune, pret_unitar, activ, categorie, subcategorie)
+  // Insert into PRODUSE
+  `INSERT INTO PRODUSE (id_produs, denumire, dimensiune, pret_unitar, activ, categorie, subcategorie)
      SELECT 
        p.id_produs, 
        p.denumire, 
@@ -71,8 +71,8 @@ const queries = [
        WHERE dw.id_produs = p.id_produs
      )`,
 
-    // Insert into FACTURI
-    `INSERT INTO FACTURI (id_factura, data_emiterii, pret_total, metoda_plata)
+  // Insert into FACTURI
+  `INSERT INTO FACTURI (id_factura, data_emiterii, pret_total, metoda_plata)
      SELECT 
        id_factura_client, 
        data_emiterii, 
@@ -85,130 +85,142 @@ const queries = [
        WHERE dw.id_factura = ${dbUserPrefix}factura_client.id_factura_client
      )`,
 
-    // Insert into VANZARI
-    `INSERT INTO VANZARI (
-        id_vanzare,
-        cafenea_id,
-        produs_id,
-        factura_id,
-        timp_id,
-        oferta_id,
-        oras_id,
-        pret_unitar_vanzare,
-        cantitate
-     )
-     WITH OrderedSales AS (
-         SELECT 
-             caf.ID_CAFENEA,
-             cp.ID_PRODUS,
-             fc.ID_FACTURA_CLIENT,
-             fc.DATA_EMITERII AS DATE_EMITERE,
-             CASE 
-                 WHEN cc.DATA_PLASARII BETWEEN o.DATA_INCEPUT AND o.DATA_FINALIZARE 
-                 THEN o.ID_OFERTA
-                 ELSE NULL
-             END AS ID_OFERTA,
-             loc.ID_ORAS,
-             cp.PRET_FINAL,
-             cp.CANTITATE,
-             ROW_NUMBER() OVER (
-                 PARTITION BY cc.ID_COMANDA_CLIENT, cp.ID_PRODUS
-                 ORDER BY 
-                     CASE 
-                         WHEN cc.DATA_PLASARII BETWEEN o.DATA_INCEPUT AND o.DATA_FINALIZARE 
-                         THEN 1 ELSE 2 
-                     END
-             ) AS ROW_NUM
-         FROM 
-             ${dbUserPrefix}CAFENEA caf
-         JOIN 
-             ${dbUserPrefix}COMANDA_CLIENT cc ON caf.ID_CAFENEA = cc.ID_CAFENEA
-         JOIN 
-             ${dbUserPrefix}COMANDA_PRODUS cp ON cc.ID_COMANDA_CLIENT = cp.ID_COMANDA_CLIENT
-         JOIN 
-             ${dbUserPrefix}FACTURA_CLIENT fc ON cc.ID_COMANDA_CLIENT = fc.ID_COMANDA_CLIENT
-         LEFT JOIN 
-             ${dbUserPrefix}OFERTA_PRODUS op ON cp.ID_PRODUS = op.ID_PRODUS
-         LEFT JOIN 
-             ${dbUserPrefix}OFERTA o ON op.ID_OFERTA = o.ID_OFERTA
-                        AND cc.DATA_PLASARII BETWEEN o.DATA_INCEPUT AND o.DATA_FINALIZARE
-         JOIN 
-             ${dbUserPrefix}LOCATIE loc ON caf.ID_LOCATIE = loc.ID_LOCATIE
-     )
-     SELECT 
-         rownum AS id_vanzare,
-         ID_CAFENEA, 
-         ID_PRODUS, 
-         ID_FACTURA_CLIENT, 
-         DATE_EMITERE, 
-         ID_OFERTA, 
-         ID_ORAS, 
-         PRET_FINAL, 
-         CANTITATE
-     FROM 
-         OrderedSales
-     WHERE 
-       ROW_NUM = 1
-       AND NOT EXISTS (
-         SELECT 1
-         FROM VANZARI dw
-         WHERE 
-           dw.cafenea_id = OrderedSales.ID_CAFENEA
-           AND dw.produs_id = OrderedSales.ID_PRODUS
-           AND dw.factura_id = OrderedSales.ID_FACTURA_CLIENT
-           AND dw.timp_id = OrderedSales.DATE_EMITERE 
-       )`
+  // Insert into VANZARI
+  `INSERT INTO VANZARI (
+    id_vanzare,
+    cafenea_id,
+    produs_id,
+    factura_id,
+    timp_id,
+    oferta_id,
+    oras_id,
+    pret_unitar_vanzare,
+    cantitate
+)
+WITH 
+ExistingMaxID AS (
+    SELECT NVL(MAX(id_vanzare), 0) AS current_max_id FROM VANZARI
+),
+OrderedSales AS (
+    SELECT 
+        caf.ID_CAFENEA,
+        cp.ID_PRODUS,
+        fc.ID_FACTURA_CLIENT,
+        fc.DATA_EMITERII AS DATE_EMITERE,
+        CASE 
+            WHEN cc.DATA_PLASARII BETWEEN o.DATA_INCEPUT AND o.DATA_FINALIZARE 
+            THEN o.ID_OFERTA
+            ELSE NULL
+        END AS ID_OFERTA,
+        loc.ID_ORAS,
+        cp.PRET_FINAL,
+        cp.CANTITATE,
+        -- Restore deduplication logic for source data
+        ROW_NUMBER() OVER (
+            PARTITION BY cc.ID_COMANDA_CLIENT, cp.ID_PRODUS
+            ORDER BY 
+                CASE 
+                    WHEN cc.DATA_PLASARII BETWEEN o.DATA_INCEPUT AND o.DATA_FINALIZARE 
+                    THEN 1 ELSE 2 
+                END
+        ) AS ROW_NUM
+    FROM 
+        ${dbUserPrefix}CAFENEA caf
+    JOIN 
+        ${dbUserPrefix}COMANDA_CLIENT cc ON caf.ID_CAFENEA = cc.ID_CAFENEA
+    JOIN 
+        ${dbUserPrefix}COMANDA_PRODUS cp ON cc.ID_COMANDA_CLIENT = cp.ID_COMANDA_CLIENT
+    JOIN 
+        ${dbUserPrefix}FACTURA_CLIENT fc ON cc.ID_COMANDA_CLIENT = fc.ID_COMANDA_CLIENT
+    LEFT JOIN 
+        ${dbUserPrefix}OFERTA_PRODUS op ON cp.ID_PRODUS = op.ID_PRODUS
+    LEFT JOIN 
+        ${dbUserPrefix}OFERTA o ON op.ID_OFERTA = o.ID_OFERTA
+                   AND cc.DATA_PLASARII BETWEEN o.DATA_INCEPUT AND o.DATA_FINALIZARE
+    JOIN 
+        ${dbUserPrefix}LOCATIE loc ON caf.ID_LOCATIE = loc.ID_LOCATIE
+)
+SELECT 
+    (SELECT current_max_id FROM ExistingMaxID) 
+    + ROW_NUMBER() OVER (ORDER BY NULL) AS id_vanzare, 
+    ID_CAFENEA, 
+    ID_PRODUS, 
+    ID_FACTURA_CLIENT, 
+    DATE_EMITERE, 
+    ID_OFERTA, 
+    ID_ORAS, 
+    PRET_FINAL, 
+    CANTITATE
+FROM 
+    OrderedSales
+WHERE 
+    ROW_NUM = 1  -- Deduplicate source records
+    AND NOT EXISTS (
+        SELECT 1
+        FROM VANZARI dw
+        WHERE 
+            dw.cafenea_id = OrderedSales.ID_CAFENEA
+            AND dw.produs_id = OrderedSales.ID_PRODUS
+            AND dw.factura_id = OrderedSales.ID_FACTURA_CLIENT
+            AND dw.timp_id = OrderedSales.DATE_EMITERE 
+    )`,
 ];
 
-export const updateWarehouse = async (req: Request, res: Response): Promise<any> => {
-    console.log('WarehouseController - Update warehouse');
+export const updateWarehouse = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  console.log("WarehouseController - Update warehouse");
 
-    // Initialize the connection
-    let connection: oracledb.Connection | null = null;
+  // Initialize the connection
+  let connection: oracledb.Connection | null = null;
 
-    try {
-        // Wait for the pool to resolve
-        const resolvedPool = await poolDW;
+  try {
+    // Wait for the pool to resolve
+    const resolvedPool = await poolDW;
 
-        // Get a connection from the pool
-        connection = await resolvedPool.getConnection();
+    // Get a connection from the pool
+    connection = await resolvedPool.getConnection();
 
-        // Execute each query one by one
-        for (const query of queries) {
-            await connection.execute(query, [], { autoCommit: true });
-        }
-
-        return res.status(200).json({ message: 'Data updated successfully' });
-    } catch (err) {
-        console.error('Error during warehouse update:', err);
-        return res.status(500).json({ error: 'Failed to update warehouse' });
-    } finally {
-        // Release connections back to their respective pools
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (closeError) {
-                console.error('Error closing connection to DW:', closeError);
-            }
-        }
+    // Execute each query one by one
+    for (const query of queries) {
+      await connection.execute(query, [], { autoCommit: true });
     }
+
+    return res.status(200).json({ message: "Data updated successfully" });
+  } catch (err) {
+    console.error("Error during warehouse update:", err);
+    return res.status(500).json({ error: "Failed to update warehouse" });
+  } finally {
+    // Release connections back to their respective pools
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeError) {
+        console.error("Error closing connection to DW:", closeError);
+      }
+    }
+  }
 };
 
-export const getTopCities = async (req: Request, res: Response): Promise<any> => {
-    console.log('WarehouseController - Fetching top cities');  
+export const getTopCities = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  console.log("WarehouseController - Fetching top cities");
 
-    // Initialize the connection
-    let connection: oracledb.Connection | null = null;
-    
-    try {
-        // Wait for the pool to resolve
-        const resolvedPool = await poolDW;
+  // Initialize the connection
+  let connection: oracledb.Connection | null = null;
 
-        // Get a connection from the pool
-        connection = await resolvedPool.getConnection();
+  try {
+    // Wait for the pool to resolve
+    const resolvedPool = await poolDW;
 
-        // Prepare the SQL statement
-        const sql = `select * 
+    // Get a connection from the pool
+    connection = await resolvedPool.getConnection();
+
+    // Prepare the SQL statement
+    const sql = `select * 
                     from (
                             select DENSE_RANK() 
                                     OVER (ORDER BY ROUND(SUM(valoare),2) DESC) d_rank_desc, 
@@ -219,54 +231,58 @@ export const getTopCities = async (req: Request, res: Response): Promise<any> =>
                             group by o.nume_oras
                         )
                     where d_rank_desc <= 5`;
-    
-        // Execute the query
-        const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
 
-        // Map the result rows to the desired format
-        if (result.rows && result.rows.length > 0){
-            const categories = result.rows.map((row: any) => ({
-                rank: row.D_RANK_DESC,    
-                nume_oras: row.NUME_ORAS,   
-                valoare_totala: row.VALOARE_TOTALA
-            }));
+    // Execute the query
+    const result = await connection.execute(sql, [], {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
 
-            return res.status(200).json(categories);
-        } else {
-            return res.status(404).json({ message: 'No cities found' });
-        }
+    // Map the result rows to the desired format
+    if (result.rows && result.rows.length > 0) {
+      const categories = result.rows.map((row: any) => ({
+        rank: row.D_RANK_DESC,
+        nume_oras: row.NUME_ORAS,
+        valoare_totala: row.VALOARE_TOTALA,
+      }));
+
+      return res.status(200).json(categories);
+    } else {
+      return res.status(404).json({ message: "No cities found" });
     }
-    catch (err) {
-        // Handle any errors that occur
-        console.error('Error fetching cities:', err);
-        return res.status(500).json({ error: 'Failed to fetch cities' });
-    } finally {
-        // Release the connection back to the pool
-        if (connection) {
-            try {
-            await connection.close();
-            } catch (closeError) {
-            console.error('Error closing connection:', closeError);
-            }
-        }
+  } catch (err) {
+    // Handle any errors that occur
+    console.error("Error fetching cities:", err);
+    return res.status(500).json({ error: "Failed to fetch cities" });
+  } finally {
+    // Release the connection back to the pool
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeError) {
+        console.error("Error closing connection:", closeError);
+      }
     }
-}
+  }
+};
 
-export const getTopSubcategories = async (req: Request, res: Response): Promise<any> => {
-    console.log('WarehouseController - Fetching top subcategories in 2024');   
+export const getTopSubcategories = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  console.log("WarehouseController - Fetching top subcategories in 2024");
 
-    // Initialize the connection
-    let connection: oracledb.Connection | null = null;
-    
-    try {
-        // Wait for the pool to resolve
-        const resolvedPool = await poolDW;
+  // Initialize the connection
+  let connection: oracledb.Connection | null = null;
 
-        // Get a connection from the pool
-        connection = await resolvedPool.getConnection();
+  try {
+    // Wait for the pool to resolve
+    const resolvedPool = await poolDW;
 
-        // Prepare the SQL statement
-        const sql = `select dense_rank()
+    // Get a connection from the pool
+    connection = await resolvedPool.getConnection();
+
+    // Prepare the SQL statement
+    const sql = `select dense_rank()
                         over (order by round(sum(valoare), 2) desc) d_rank_dens,
                         p.subcategorie, round(sum(valoare), 2) valoare_totala
                     from produse p join vanzari v on p.id_produs = v.produs_id
@@ -274,36 +290,36 @@ export const getTopSubcategories = async (req: Request, res: Response): Promise<
                     where t.an = 2024
                     and p.categorie = 'cafea'
                     group by p.subcategorie`;
-    
-        // Execute the query
-        const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
 
-        // Map the result rows to the desired format
-        if (result.rows && result.rows.length > 0){
-            const categories = result.rows.map((row: any) => ({
-                rank: row.D_RANK_DENS,    
-                subcategorie: row.SUBCATEGORIE,   
-                valoare_totala: row.VALOARE_TOTALA
-            }));
+    // Execute the query
+    const result = await connection.execute(sql, [], {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
 
-            return res.status(200).json(categories);
-        } else {
-            return res.status(404).json({ message: 'No subcategories found' });
-        }
+    // Map the result rows to the desired format
+    if (result.rows && result.rows.length > 0) {
+      const categories = result.rows.map((row: any) => ({
+        rank: row.D_RANK_DENS,
+        subcategorie: row.SUBCATEGORIE,
+        valoare_totala: row.VALOARE_TOTALA,
+      }));
+
+      return res.status(200).json(categories);
+    } else {
+      return res.status(404).json({ message: "No subcategories found" });
     }
-    catch (err) {
-        // Handle any errors that occur
-        console.error('Error fetching subcategories:', err);
-        return res.status(500).json({ error: 'Failed to fetch subcategories' });
-    } finally {
-        // Release the connection back to the pool
-        if (connection) {
-            try {
-            await connection.close();
-            } catch (closeError) {
-            console.error('Error closing connection:', closeError);
-            }
-        }
+  } catch (err) {
+    // Handle any errors that occur
+    console.error("Error fetching subcategories:", err);
+    return res.status(500).json({ error: "Failed to fetch subcategories" });
+  } finally {
+    // Release the connection back to the pool
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeError) {
+        console.error("Error closing connection:", closeError);
+      }
     }
 }
 

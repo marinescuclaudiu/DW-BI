@@ -12,29 +12,20 @@ export interface DbConfig {
   poolIncrement: number;
 }
 
-export const dbConfig: DbConfig = {
-  user: process.env.DB_USER || "",
-  password: process.env.DB_PASSWORD || "",
-  connectString: process.env.DB_CONNECT_STRING || "",
-  poolMin: 1,
-  poolMax: 5,
-  poolIncrement: 1,
-};
-
 export const dbConfigOLTP: DbConfig = {
-  user: process.env.DB_USER_OLTP || "",  // Defaults to an empty string if not defined
+  user: process.env.DB_USER_OLTP || "", // Defaults to an empty string if not defined
   password: process.env.DB_PASSWORD_OLTP || "",
   connectString: process.env.DB_CONNECT_STRING || "",
-  poolMin: 1,  // Minimum pool size
-  poolMax: 5,  // Maximum pool size
-  poolIncrement: 1,  // Increment in the pool size
+  poolMin: 1, // Minimum pool size
+  poolMax: 5, // Maximum pool size
+  poolIncrement: 1, // Increment in the pool size
 };
 
 export const dbConfigDW: DbConfig = {
-  user: process.env.DB_USER_DW || "",  // Defaults to an empty string if not defined
+  user: process.env.DB_USER_DW || "", // Defaults to an empty string if not defined
   password: process.env.DB_PASSWORD_DW || "",
   connectString: process.env.DB_CONNECT_STRING || "",
-  poolMin: 1,  // Minimum pool size
-  poolMax: 5,  // Maximum pool size
-  poolIncrement: 1,  // Increment in the pool size
+  poolMin: 1, // Minimum pool size
+  poolMax: 5, // Maximum pool size
+  poolIncrement: 1, // Increment in the pool size
 };
