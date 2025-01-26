@@ -36,7 +36,7 @@ export function DropdownMenuDemo({
   const handleCheckout = () => {
     cart.map((produs) => {
       produs.cantitate = parseInt(produs.cantitate.toString());
-      produs.pret = produs.pret * produs.cantitate;
+      produs.pret = produs.pret;
     });
 
     setCart([]);
