@@ -1,17 +1,17 @@
 import { Request, Response } from "express";
 import { poolOLTP } from "../config/dbPool";
-import oracledb from 'oracledb';
+import oracledb from "oracledb";
 
 export const addOrder = async (req: Request, res: Response): Promise<any> => {
   const { id_user, id_cafe, current_date, products } = req.body;
 
-    console.log('OrderController - Adding order for user ID:', id_user);
-    // Initialize the connection
-    let connection: oracledb.Connection | null = null;
-    
-    try {
-        // Wait for the pool to resolve
-        const resolvedPool = await poolOLTP;
+  console.log("OrderController - Adding order for user ID:", id_user);
+  // Initialize the connection
+  let connection: oracledb.Connection | null = null;
+
+  try {
+    // Wait for the pool to resolve
+    const resolvedPool = await poolOLTP;
 
     // Get a connection from the pool
     connection = await resolvedPool.getConnection();
@@ -41,15 +41,11 @@ export const addOrder = async (req: Request, res: Response): Promise<any> => {
       if (result.rowsAffected === 0) {
         return res.status(404).json({ message: "Something went wrong" });
       }
-
-      var total_price = 0.0;
-
+      var pret_comanda;
       // Now iterate over the products array and insert each product
       for (const product of products) {
         const { id, cantitate, pret } = product;
-
-        total_price += cantitate * pret;
-
+        pret_comanda = pret;
         // Prepare the SQL statement
         const sql2 = `INSERT INTO COMANDA_PRODUS(ID_COMANDA_CLIENT, ID_PRODUS, CANTITATE, PRET_FINAL)
             VALUES(:nextId, :id, :cantitate, :pret)`;
@@ -66,22 +62,22 @@ export const addOrder = async (req: Request, res: Response): Promise<any> => {
         }
       }
 
-        // Prepare the SQL statement
+      // Prepare the SQL statement
       const sqlFindId2 = `SELECT MAX(ID_FACTURA_CLIENT) AS MAX_ID FROM FACTURA_CLIENT`;
 
       const resultFindId2 = await connection.execute(sqlFindId2, [], {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
       });
-    
+
       if (resultFindId2.rows && resultFindId2.rows.length > 0) {
         const nextId2 = (resultFindId2.rows[0] as any).MAX_ID + 1;
 
         const sql3 = `INSERT INTO FACTURA_CLIENT(ID_FACTURA_CLIENT, ID_COMANDA_CLIENT, PRET_TOTAL, DATA_EMITERII, STATUS, METODA_PLATA)
-          VALUES(:nextId2, :nextId, :total_price, :current_date, 'inchisa', 'card')`;
+          VALUES(:nextId2, :nextId, :pret, :current_date, 'inchisa', 'card')`;
 
         const result3 = await connection.execute(
           sql3,
-          [nextId2, nextId, total_price, current_date],
+          [nextId2, nextId, pret_comanda, current_date],
           { autoCommit: true }
         );
 
