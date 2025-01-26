@@ -306,3 +306,62 @@ export const getTopSubcategories = async (req: Request, res: Response): Promise<
         }
     }
 }
+
+export const getTopProductSales = async (req: Request, res: Response): Promise<any> => {
+    const { trimestru, an } = req.body;
+    console.log('WarehouseController - Fetching top products in Q2');   
+
+    // Initialize the connection
+    let connection: oracledb.Connection | null = null;
+    
+    try {
+        // Wait for the pool to resolve
+        const resolvedPool = await poolDW;
+
+        // Get a connection from the pool
+        connection = await resolvedPool.getConnection();
+
+        // Prepare the SQL statement
+        const sql = `select row_number()
+                            over (order by round(sum(valoare), 2) desc) row_nr,
+                        dense_rank() 
+                            over (order by round(sum(valoare), 2) desc) d_rank,
+                    p.id_produs, max(p.denumire) DENUMIRE, round(sum(valoare), 2) VALOARE
+                    from produse p join vanzari v on p.id_produs = v.produs_id
+                    join timp t on t.id_timp = v.timp_id
+                    where t.an = :an
+                    and t.trimestru = :trimestru
+                    group by p.id_produs`;
+    
+        // Execute the query
+        const result = await connection.execute(sql, [an, trimestru], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+
+        // Map the result rows to the desired format
+        if (result.rows && result.rows.length > 0){
+            const categories = result.rows.map((row: any) => ({
+                rank: row.D_RANK,   
+                id_produs: row.ID_PRODUS,   
+                denumire: row.DENUMIRE,   
+                valoare: row.VALOARE,   
+            }));
+
+            return res.status(200).json(categories);
+        } else {
+            return res.status(404).json({ message: 'No products found' });
+        }
+    }
+    catch (err) {
+        // Handle any errors that occur
+        console.error('Error fetching products:', err);
+        return res.status(500).json({ error: 'Failed to fetch products' });
+    } finally {
+        // Release the connection back to the pool
+        if (connection) {
+            try {
+            await connection.close();
+            } catch (closeError) {
+            console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+}
