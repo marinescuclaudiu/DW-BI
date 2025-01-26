@@ -42,9 +42,13 @@ export const addOrder = async (req: Request, res: Response): Promise<any> => {
         return res.status(404).json({ message: "Something went wrong" });
       }
 
+      var total_price = 0.0;
+
       // Now iterate over the products array and insert each product
       for (const product of products) {
         const { id, cantitate, pret } = product;
+
+        total_price += cantitate * pret;
 
         // Prepare the SQL statement
         const sql2 = `INSERT INTO COMANDA_PRODUS(ID_COMANDA_CLIENT, ID_PRODUS, CANTITATE, PRET_FINAL)
@@ -61,6 +65,31 @@ export const addOrder = async (req: Request, res: Response): Promise<any> => {
           return res.status(404).json({ message: "Something went wrong" });
         }
       }
+
+        // Prepare the SQL statement
+      const sqlFindId2 = `SELECT MAX(ID_FACTURA_CLIENT) AS MAX_ID FROM FACTURA_CLIENT`;
+
+      const resultFindId2 = await connection.execute(sqlFindId2, [], {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      });
+    
+      if (resultFindId2.rows && resultFindId2.rows.length > 0) {
+        const nextId2 = (resultFindId2.rows[0] as any).MAX_ID + 1;
+
+        const sql3 = `INSERT INTO FACTURA_CLIENT(ID_FACTURA_CLIENT, ID_COMANDA_CLIENT, PRET_TOTAL, DATA_EMITERII, STATUS, METODA_PLATA)
+          VALUES(:nextId2, :nextId, :total_price, :current_date, 'inchisa', 'card')`;
+
+        const result3 = await connection.execute(
+          sql3,
+          [nextId2, nextId, total_price, current_date],
+          { autoCommit: true }
+        );
+
+        if (result3.rowsAffected === 0) {
+          return res.status(404).json({ message: "Something went wrong" });
+        }
+      }
+
       return res.status(200).json({ message: "Order added successfully" });
     }
   } catch (err) {
