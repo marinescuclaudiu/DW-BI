@@ -451,3 +451,73 @@ export const getProductSalesByPaymentMethod = async (
       }
   }
   }
+
+  export const getAverageSales = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    console.log("WarehouseController - Fetching average sales");
+  
+    // Initialize the connection
+    let connection: oracledb.Connection | null = null;
+  
+    try {
+      // Wait for the pool to resolve
+      const resolvedPool = await poolDW;
+  
+      // Get a connection from the pool
+      connection = await resolvedPool.getConnection();
+  
+      // Prepare the SQL statement
+      const sql = `SELECT 
+                        cafenea_id, 
+                        TO_NUMBER(luna) AS luna, 
+                        round(SUM(valoare), 2) AS valoare,
+                        ROUND(
+                            AVG(SUM(valoare)) OVER (
+                                PARTITION BY cafenea_id 
+                                ORDER BY TO_NUMBER(luna) 
+                                ROWS 2 PRECEDING
+                            ), 
+                            2
+                        ) AS MEDIA_3_LUNI
+                    FROM vanzari v
+                    JOIN timp t ON v.timp_id = t.id_timp
+                    JOIN cafenele c ON v.cafenea_id = c.id_cafenea
+                    WHERE an = 2024
+                    GROUP BY cafenea_id, TO_NUMBER(luna)
+                    ORDER BY cafenea_id, luna`;
+  
+      // Execute the query
+      const result = await connection.execute(sql, [], {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      });
+  
+      // Map the result rows to the desired format
+      if (result.rows && result.rows.length > 0) {
+        const products = result.rows.map((row: any) => ({
+          id_cafenea: row.CAFENEA_ID,
+          luna: row.LUNA,
+          valoare: row.VALOARE,
+          media_3_luni: row.MEDIA_3_LUNI,
+        }));
+  
+        return res.status(200).json(products);
+      } else {
+        return res.status(404).json({ message: "No products found" });
+      }
+    } catch (err) {
+      // Handle any errors that occur
+      console.error("Error fetching products:", err);
+      return res.status(500).json({ error: "Failed to fetch products" });
+    } finally {
+      // Release the connection back to the pool
+      if (connection) {
+        try {
+          await connection.close();
+        } catch (closeError) {
+          console.error("Error closing connection:", closeError);
+        }
+      }
+  }
+  }
