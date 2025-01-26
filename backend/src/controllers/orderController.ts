@@ -41,11 +41,12 @@ export const addOrder = async (req: Request, res: Response): Promise<any> => {
       if (result.rowsAffected === 0) {
         return res.status(404).json({ message: "Something went wrong" });
       }
-      var pret_comanda;
+      var pret_comanda = 0.0;
       // Now iterate over the products array and insert each product
       for (const product of products) {
+        console.log(product);
         const { id, cantitate, pret } = product;
-        pret_comanda = pret;
+        pret_comanda += (cantitate * pret);
         // Prepare the SQL statement
         const sql2 = `INSERT INTO COMANDA_PRODUS(ID_COMANDA_CLIENT, ID_PRODUS, CANTITATE, PRET_FINAL)
             VALUES(:nextId, :id, :cantitate, :pret)`;
@@ -73,7 +74,7 @@ export const addOrder = async (req: Request, res: Response): Promise<any> => {
         const nextId2 = (resultFindId2.rows[0] as any).MAX_ID + 1;
 
         const sql3 = `INSERT INTO FACTURA_CLIENT(ID_FACTURA_CLIENT, ID_COMANDA_CLIENT, PRET_TOTAL, DATA_EMITERII, STATUS, METODA_PLATA)
-          VALUES(:nextId2, :nextId, :pret, :current_date, 'inchisa', 'card')`;
+          VALUES(:nextId2, :nextId, :pret_comanda, :current_date, 'inchisa', 'card')`;
 
         const result3 = await connection.execute(
           sql3,
