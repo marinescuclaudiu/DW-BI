@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pool } from "../config/dbPool";
+import { poolOLTP } from "../config/dbPool";
 import oracledb from 'oracledb';
 
 export const addSubcategory = async (req: Request, res: Response): Promise<any> => {
@@ -12,7 +12,7 @@ export const addSubcategory = async (req: Request, res: Response): Promise<any> 
         
         try {
             // Wait for the pool to resolve
-            const resolvedPool = await pool;
+            const resolvedPool = await poolOLTP;
     
             // Get a connection from the pool
             connection = await resolvedPool.getConnection();
@@ -65,7 +65,7 @@ export const getSubcategory = async (req: Request, res: Response): Promise<any> 
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -113,7 +113,7 @@ export const getSubcategories = async (req: Request, res: Response): Promise<any
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -164,7 +164,7 @@ export const updateSubcategory = async (req: Request, res: Response): Promise<an
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -207,7 +207,7 @@ export const deleteSubcategory = async (req: Request, res: Response): Promise<an
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();

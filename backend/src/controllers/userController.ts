@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pool } from "../config/dbPool";
+import { poolOLTP } from "../config/dbPool";
 import oracledb from 'oracledb';
 
 export const getUser = async (req: Request, res: Response): Promise<any> => {
@@ -12,7 +12,7 @@ export const getUser = async (req: Request, res: Response): Promise<any> => {
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -61,7 +61,7 @@ export const getUsers = async (req: Request, res: Response): Promise<any> => {
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -113,7 +113,7 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -156,7 +156,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<any> => {
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -199,7 +199,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();

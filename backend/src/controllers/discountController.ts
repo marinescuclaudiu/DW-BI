@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pool } from "../config/dbPool";
+import { poolOLTP } from "../config/dbPool";
 import oracledb from 'oracledb';
 import { formatDateToCustom } from "../helpers/formatDate";
 
@@ -13,7 +13,7 @@ export const addDiscount = async (req: Request, res: Response): Promise<any> => 
         
         try {
             // Wait for the pool to resolve
-            const resolvedPool = await pool;
+            const resolvedPool = await poolOLTP;
     
             // Get a connection from the pool
             connection = await resolvedPool.getConnection();
@@ -64,7 +64,7 @@ export const getDiscount = async (req: Request, res: Response): Promise<any> => 
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -113,7 +113,7 @@ export const getDiscounts = async (req: Request, res: Response): Promise<any> =>
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -165,7 +165,7 @@ export const updateDiscount = async (req: Request, res: Response): Promise<any> 
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -208,7 +208,7 @@ export const deleteDiscount = async (req: Request, res: Response): Promise<any> 
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();

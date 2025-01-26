@@ -1,18 +1,17 @@
 import { Request, Response } from "express";
-import { pool } from "../config/dbPool";
-import oracledb from "oracledb";
+import { poolOLTP } from "../config/dbPool";
+import oracledb from 'oracledb';
 
 export const addOrder = async (req: Request, res: Response): Promise<any> => {
   const { id_user, id_cafe, current_date, products } = req.body;
-  console.log("🚀 ~ addOrder ~ products:", products);
 
-  console.log("OrderController - Adding order for user ID:", id_user);
-  // Initialize the connection
-  let connection: oracledb.Connection | null = null;
-
-  try {
-    // Wait for the pool to resolve
-    const resolvedPool = await pool;
+    console.log('OrderController - Adding order for user ID:', id_user);
+    // Initialize the connection
+    let connection: oracledb.Connection | null = null;
+    
+    try {
+        // Wait for the pool to resolve
+        const resolvedPool = await poolOLTP;
 
     // Get a connection from the pool
     connection = await resolvedPool.getConnection();
@@ -46,7 +45,6 @@ export const addOrder = async (req: Request, res: Response): Promise<any> => {
       // Now iterate over the products array and insert each product
       for (const product of products) {
         const { id, cantitate, pret } = product;
-        console.log("🚀 ~ addOrder ~ product:", product);
 
         // Prepare the SQL statement
         const sql2 = `INSERT INTO COMANDA_PRODUS(ID_COMANDA_CLIENT, ID_PRODUS, CANTITATE, PRET_FINAL)

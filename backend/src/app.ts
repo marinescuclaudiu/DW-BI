@@ -6,7 +6,9 @@ import { cafeRouter } from "./routes/cafeRoute";
 import { userRouter } from "./routes/userRoute";
 import { productRouter } from "./routes/productRoute";
 import { orderRouter } from "./routes/orderRoute";
+import { warehouseController } from "./routes/warehouse";
 import cors from "cors";
+
 
 const app = express();
 app.use(
@@ -29,6 +31,7 @@ app.use("/api", cafeRouter);
 app.use("/api", userRouter);
 app.use("/api", productRouter);
 app.use("/api", orderRouter);
+app.use("/api", warehouseController);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

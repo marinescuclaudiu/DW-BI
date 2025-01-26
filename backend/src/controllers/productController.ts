@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pool } from "../config/dbPool";
+import { poolOLTP } from "../config/dbPool";
 import oracledb from 'oracledb';
 
 export const addProduct = async (req: Request, res: Response): Promise<any> => {
@@ -12,7 +12,7 @@ export const addProduct = async (req: Request, res: Response): Promise<any> => {
         
         try {
             // Wait for the pool to resolve
-            const resolvedPool = await pool;
+            const resolvedPool = await poolOLTP;
     
             // Get a connection from the pool
             connection = await resolvedPool.getConnection();
@@ -67,7 +67,7 @@ export const getProduct = async (req: Request, res: Response): Promise<any> => {
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -119,7 +119,7 @@ export const getProducts = async (req: Request, res: Response): Promise<any> => 
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -174,7 +174,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<any> =
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -217,7 +217,7 @@ export const deleteProduct = async (req: Request, res: Response): Promise<any> =
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -258,7 +258,7 @@ export const getProductsOnDiscount = async (req: Request, res: Response): Promis
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();

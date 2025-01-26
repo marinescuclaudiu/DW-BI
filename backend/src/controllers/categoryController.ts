@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pool } from "../config/dbPool";
+import { poolOLTP } from "../config/dbPool";
 import oracledb from 'oracledb';
 
 export const addCategory = async (req: Request, res: Response): Promise<any> => {
@@ -12,7 +12,7 @@ export const addCategory = async (req: Request, res: Response): Promise<any> => 
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -66,7 +66,7 @@ export const getCategory = async (req: Request, res: Response): Promise<any> => 
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -113,7 +113,7 @@ export const getCategories = async (req: Request, res: Response): Promise<any> =
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -163,7 +163,7 @@ export const updateCategory = async (req: Request, res: Response): Promise<any> 
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
@@ -206,7 +206,7 @@ export const deleteCategory = async (req: Request, res: Response): Promise<any> 
     
     try {
         // Wait for the pool to resolve
-        const resolvedPool = await pool;
+        const resolvedPool = await poolOLTP;
 
         // Get a connection from the pool
         connection = await resolvedPool.getConnection();
