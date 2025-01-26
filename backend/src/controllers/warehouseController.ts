@@ -322,6 +322,7 @@ export const getTopSubcategories = async (
       }
     }
 }
+}
 
 export const getTopProductSales = async (req: Request, res: Response): Promise<any> => {
     const { trimestru, an } = req.body;
@@ -381,3 +382,72 @@ export const getTopProductSales = async (req: Request, res: Response): Promise<a
         }
     }
 }
+
+export const getProductSalesByPaymentMethod = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    console.log("WarehouseController - Fetching sales for cities by payment method");
+  
+    // Initialize the connection
+    let connection: oracledb.Connection | null = null;
+  
+    try {
+      // Wait for the pool to resolve
+      const resolvedPool = await poolDW;
+  
+      // Get a connection from the pool
+      connection = await resolvedPool.getConnection();
+  
+      // Prepare the SQL statement
+      const sql = `SELECT 
+                    o.id_oras, 
+                    MAX(o.nume_oras) AS nume_oras, 
+                    f.metoda_plata,
+                    SUM(v.valoare) AS vanzari,
+                    SUM(SUM(v.valoare)) OVER (PARTITION BY o.id_oras) AS total_vanzari_oras,
+                    ROUND(
+                        SUM(v.valoare) / SUM(SUM(v.valoare)) OVER (PARTITION BY o.id_oras), 
+                        6
+                    ) AS procent_metoda_plata
+                FROM facturi f
+                JOIN vanzari v ON f.id_factura = v.factura_id
+                JOIN orase o ON o.id_oras = v.oras_id
+                GROUP BY o.id_oras, f.metoda_plata
+                ORDER BY o.id_oras`;
+  
+      // Execute the query
+      const result = await connection.execute(sql, [], {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      });
+  
+      // Map the result rows to the desired format
+      if (result.rows && result.rows.length > 0) {
+        const categories = result.rows.map((row: any) => ({
+          id_oras: row.ID_ORAS,
+          nume_oras: row.NUME_ORAS,
+          metoda_plata: row.METODA_PLATA,
+          vanzari: row.VANZARI,
+          total_vanzari_oras: row.TOTAL_VANZARI_ORAS,
+          procent_metoda_plata: row.PROCENT_METODA_PLATA,
+        }));
+  
+        return res.status(200).json(categories);
+      } else {
+        return res.status(404).json({ message: "No products found" });
+      }
+    } catch (err) {
+      // Handle any errors that occur
+      console.error("Error fetching products:", err);
+      return res.status(500).json({ error: "Failed to fetch products" });
+    } finally {
+      // Release the connection back to the pool
+      if (connection) {
+        try {
+          await connection.close();
+        } catch (closeError) {
+          console.error("Error closing connection:", closeError);
+        }
+      }
+  }
+  }
