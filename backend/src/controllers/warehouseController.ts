@@ -521,3 +521,71 @@ export const getProductSalesByPaymentMethod = async (
       }
   }
   }
+
+  export const getMostExpensiveProduct = async (
+    req: Request,
+    res: Response
+  ): Promise<any> => {
+    console.log("WarehouseController - Fetching most expensive product");
+  
+    // Initialize the connection
+    let connection: oracledb.Connection | null = null;
+  
+    try {
+      // Wait for the pool to resolve
+      const resolvedPool = await poolDW;
+  
+      // Get a connection from the pool
+      connection = await resolvedPool.getConnection();
+  
+      // Prepare the SQL statement
+      const sql = `SELECT 
+                        subcategorie, 
+                        denumire AS denumire_produs_cu_pret_maxim, 
+                        pret_unitar_vanzare
+                    FROM (
+                        SELECT 
+                            p.subcategorie, 
+                            p.denumire, 
+                            v.pret_unitar_vanzare,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY p.subcategorie 
+                                ORDER BY v.pret_unitar_vanzare DESC
+                            ) AS rn
+                        FROM produse p
+                        JOIN vanzari v ON p.id_produs = v.produs_id
+                    ) ranked
+                    WHERE rn = 1`;
+  
+      // Execute the query
+      const result = await connection.execute(sql, [], {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      });
+  
+      // Map the result rows to the desired format
+      if (result.rows && result.rows.length > 0) {
+        const products = result.rows.map((row: any) => ({
+          subcategorie: row.SUBCATEGORIE,
+          denumire_produs: row.DENUMIRE_PRODUS_CU_PRET_MAXIM,
+          pret_unitar: row.PRET_UNITAR_VANZARE,
+        }));
+  
+        return res.status(200).json(products);
+      } else {
+        return res.status(404).json({ message: "No products found" });
+      }
+    } catch (err) {
+      // Handle any errors that occur
+      console.error("Error fetching products:", err);
+      return res.status(500).json({ error: "Failed to fetch products" });
+    } finally {
+      // Release the connection back to the pool
+      if (connection) {
+        try {
+          await connection.close();
+        } catch (closeError) {
+          console.error("Error closing connection:", closeError);
+        }
+      }
+  }
+}
