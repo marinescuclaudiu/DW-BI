@@ -193,3 +193,61 @@ export const updateWarehouse = async (req: Request, res: Response): Promise<any>
         }
     }
 };
+
+export const getTopCities = async (req: Request, res: Response): Promise<any> => {
+    console.log('WarehouseController - Fetching top cities');  
+
+    // Initialize the connection
+    let connection: oracledb.Connection | null = null;
+    
+    try {
+        // Wait for the pool to resolve
+        const resolvedPool = await poolDW;
+
+        // Get a connection from the pool
+        connection = await resolvedPool.getConnection();
+
+        // Prepare the SQL statement
+        const sql = `select * 
+                    from (
+                            select DENSE_RANK() 
+                                    OVER (ORDER BY ROUND(SUM(valoare),2) DESC) d_rank_desc, 
+                                o.nume_oras, ROUND(SUM(valoare),2) valoare_totala
+                            from orase o join vanzari v on o.id_oras = v.oras_id
+                            join timp t on t.id_timp = v.timp_id
+                            where t.an = 2024
+                            group by o.nume_oras
+                        )
+                    where d_rank_desc <= 5`;
+    
+        // Execute the query
+        const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+
+        // Map the result rows to the desired format
+        if (result.rows && result.rows.length > 0){
+            const categories = result.rows.map((row: any) => ({
+                rank: row.D_RANK_DESC,    
+                nume_oras: row.NUME_ORAS,   
+                valoare_totala: row.VALOARE_TOTALA
+            }));
+
+            return res.status(200).json(categories);
+        } else {
+            return res.status(404).json({ message: 'No cities found' });
+        }
+    }
+    catch (err) {
+        // Handle any errors that occur
+        console.error('Error fetching cities:', err);
+        return res.status(500).json({ error: 'Failed to fetch cities' });
+    } finally {
+        // Release the connection back to the pool
+        if (connection) {
+            try {
+            await connection.close();
+            } catch (closeError) {
+            console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+}
