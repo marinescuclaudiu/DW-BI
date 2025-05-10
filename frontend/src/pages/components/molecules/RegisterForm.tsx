@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-export function LoginForm({
+export function RegisterForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
@@ -21,26 +21,18 @@ export function LoginForm({
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
-    var logged = false;
     axios
-      .get("http://localhost:3000/customers")
-      .then((response) => {
-        const form = e.target as HTMLFormElement;
-        console.log((form[0] as HTMLInputElement).value, (form[1] as HTMLInputElement).value);
-        response.data.filter((customer: any) => {
-          const form = e.target as HTMLFormElement;
-          if (customer.email === (form[0] as HTMLInputElement).value && customer.password === (form[1] as HTMLInputElement).value) {
-            localStorage.setItem("id_client", customer.id);
-            logged = true;
-            console.log("Login successful");
-            navigate("/home");
-          }
-        })
-        if (!logged) {
-          alert("Login failed");
-        }
+      .post("http://localhost:3000/customers", {
+        nume: e.target[0].value,
+        prenume: e.target[1].value,
+        email: e.target[2].value,
+        password: e.target[3].value,
       })
-      .catch((error) => {
+      .then((response) => {
+        console.log('a mers')
+        navigate("/");
+      }
+      ).catch((error) => {
         alert("Login failed");
         console.log(error);
       });
@@ -50,25 +42,43 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl">Register</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Introduceti datele pentru a va inregistra
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="nume">Nume</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
+                  id="nume"
+                  placeholder="Nume"
                   required
                 />
               </div>
               <div className="grid gap-2">
-                <Input id="password" type="password" required />
+                <Label htmlFor="prenume">Prenume</Label>
+                <Input id="prenume" required placeholder="Prenume" />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  placeholder="Email"
+                  required
+                  type="email"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="parola">Parola</Label>
+                <Input
+                  id="parola"
+                  placeholder="Parola"
+                  type="password"
+                  required
+                />
               </div>
               <Button type="submit" className="w-full">
                 Login

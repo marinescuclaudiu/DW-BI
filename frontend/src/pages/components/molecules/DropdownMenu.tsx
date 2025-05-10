@@ -42,13 +42,15 @@ export function DropdownMenuDemo({
     setCart([]);
 
     axios
-      .post("http://localhost:3000/api/orders/add", {
-        id_user: localStorage.getItem("id_client"),
-        id_cafe: idCafenea,
-        current_date: date,
+      .post("http://localhost:3000/orders", {
+        id_client: localStorage.getItem("id_client"),
+        id_cafenea: idCafenea,
         products: cart,
       })
       .then((res) => {
+        console.log("🚀 ~ handleCheckout ~ client:", localStorage.getItem("id_client"))
+        console.log("🚀 ~ handleCheckout ~ id_cafe:", idCafenea)
+        console.log("🚀 ~ handleCheckout ~ produse:", cart)
         console.log(res);
       })
       .catch((err) => {
@@ -71,7 +73,7 @@ export function DropdownMenuDemo({
             <DropdownMenuItem key={index}>
               <div className="flex items-center justify-between">
                 <span>
-                  {produs.denumire} - {produs.pret} - {produs.cantitate} buc
+                  {produs.nume_produs} - {produs.pret} - {produs.cantitate} buc
                 </span>
               </div>
             </DropdownMenuItem>
